@@ -1,0 +1,55 @@
+
+- name: tst_consul
+  hosts: all
+  remote_user: gugmelik
+  
+  vars:
+    consul_config_dir: /etc/systemd/system/consul.d
+    consul_server_ip: 20.86.36.23 
+
+  tasks:
+    - name: Install unzip
+      apt: name=unzip state=present
+      become: true
+
+      #- name: download consul
+      #get_url:
+      #  url: https://releases.hashicorp.com/consul/1.10.1/consul_1.10.1_linux_amd64.zip
+      # dest: $HOME/consul
+
+    - name: Install Consul
+      become: true
+      unarchive:
+        src: https://releases.hashicorp.com/consul/1.10.1/consul_1.10.1_linux_amd64.zip
+        remote_src: yes
+        dest: /usr/bin
+        creates: /usr/bin/consul
+        mode: 0555
+
+    - name: Make Consul a service
+      become: true
+      copy:
+        src: consul.service
+        dest: /etc/systemd/system/consul.service
+
+    - name: Ensure config directory exists
+      become: true
+      file:
+        path: "{{ consul_config_dir }}"
+        state: directory
+
+    - name: Deploy consul config
+      become: true
+      template:
+        src: init.json.j2
+        dest: "{{consul_config_dir}}/init.json"
+
+    - name: Ensure consul's running
+      become: true
+      service: name=consul state=started
+
+
+    #  - debug:
+    #    var: ansible_facts
+
+
